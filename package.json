@@ -1,0 +1,13 @@
+{
+  "name": "gift-list",
+  "version": "1.0.0",
+  "private": true,
+  "description": "礼物清单 - 每人独立清单、匿名认领、生日揭晓",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

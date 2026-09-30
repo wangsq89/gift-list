@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎁 礼物清单</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #5b9bd5; --blue-d: #2f6fad;
+    --ink: #2d2a32; --muted: #8a8593; --line: #f0e6ec;
+  }
+  * { box-sizing: border-box; }
+  /* 站酷快乐体：标题/按钮/价格等醒目处 */
+  header h1, .card h3, .btn, .claim, .price, .banner, .comments h4,
+  .nav select, .tabs button, .modal h3, .claimed-by, .cbtn {
+    font-family: 'ZCOOL KuaiLe', 'Microsoft YaHei', sans-serif;
+  }
+  body {
+    margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink); line-height: 1.5; min-height: 100vh; position: relative; overflow-x: hidden;
+    background: linear-gradient(180deg, #eef6fd 0%, #fdf8ee 55%, #e3f1fc 100%);
+  }
+
+  /* 背景 */
+  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .95; animation: slowZoom 30s ease-in-out infinite alternate; }
+  .bg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .95; }
+  .bg.noimg { background:
+      radial-gradient(circle at 15% 20%, rgba(198,228,250,.8) 0, transparent 35%),
+      radial-gradient(circle at 85% 75%, rgba(255,244,214,.8) 0, transparent 40%),
+      radial-gradient(circle at 60% 10%, rgba(255,250,230,.9) 0, transparent 30%),
+      linear-gradient(180deg, #eef6fd, #fdf8ee 55%, #e3f1fc); }
+  @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.12); } }
+  .cloud { position: absolute; background: rgba(255,255,255,.85); border-radius: 50px; filter: blur(1px); animation: drift linear infinite; }
+  @keyframes drift { 0% { transform: translateX(-20vw); } 100% { transform: translateX(120vw); } }
+  .emoji { position: absolute; font-size: 34px; opacity: .6; animation: floatUp linear infinite; }
+  @keyframes floatUp { 0% { transform: translateY(0) rotate(0deg); } 100% { transform: translateY(-110vh) rotate(40deg); } }
+
+  /* 玻璃拟态 */
+  .glass {
+    background: rgba(255,255,255,.5);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid rgba(255,255,255,.65);
+    box-shadow: 0 8px 30px rgba(47,111,173,.18);
+  }
+
+  /* 登录/注册 */
+  .auth { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 5; }
+  .auth-card { width: 100%; max-width: 380px; border-radius: 16px; padding: 26px; }
+  .auth-card h2 { margin: 0 0 4px; text-align: center; font-size: 24px; }
+  .auth-card p.sub { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tabs button { flex: 1; padding: 9px; border: 1px solid var(--line); background: rgba(255,255,255,.6); border-radius: 9px; cursor: pointer; font-size: 14px; color: var(--ink); }
+  .tabs button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .auth-links { display: flex; justify-content: space-between; margin-top: 12px; font-size: 13px; }
+  .auth-links a { color: var(--blue-d); cursor: pointer; }
+  .auth-links a:hover { text-decoration: underline; }
+  .code-row { display: flex; gap: 8px; }
+  .code-row input { flex: 1; }
+  .code-row .btn { white-space: nowrap; }
+  .code-hint { font-size: 12px; color: #b8860b; background: #fffbe6; border: 1px dashed #f0d68a; border-radius: 8px; padding: 6px 9px; margin-top: 8px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field input, .field textarea, .field select {
+    width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font-size: 14px; font-family: inherit; background: rgba(255,255,255,.7);
+  }
+  .btn {
+    border: none; border-radius: 10px; padding: 10px 16px; font-size: 14px; cursor: pointer;
+    background: var(--blue); color: #fff; transition: .15s;
+  }
+  .btn:hover { background: var(--blue-d); }
+  .btn.ghost { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+  .btn.small { padding: 4px 9px; font-size: 12px; }
+  .btn.block { width: 100%; }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+  /* 头部 */
+  header {
+    background: rgba(255,255,255,.45);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    color: var(--ink); padding: 20px 20px 14px; text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,.65); position: relative; z-index: 1;
+  }
+  header h1 { margin: 0; font-size: 24px; color: var(--blue-d); letter-spacing: 4px; }
+  .banner {
+    margin: 10px auto 0; max-width: 560px; border-radius: 12px; padding: 8px 14px;
+    background: rgba(255,255,255,.55); color: var(--blue-d); font-size: 14px; font-weight: 600;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .banner.celebrate { background: rgba(255,240,150,.75); }
+  .nav { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .nav select {
+    padding: 8px 10px; border-radius: 9px; border: 1px solid rgba(255,255,255,.6);
+    font-size: 14px; background: rgba(255,255,255,.8); color: var(--ink); cursor: pointer; max-width: 180px;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+  .toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .card {
+    border-radius: 14px; padding: 18px;
+    display: flex; flex-direction: column; transition: transform .2s;
+    background: rgba(255,255,255,.5);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid rgba(255,255,255,.65);
+    box-shadow: 0 8px 30px rgba(47,111,173,.18);
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .meta { display: flex; align-items: center; gap: 12px; font-size: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .price { font-weight: 600; color: var(--blue-d); }
+  .desc { font-size: 14px; color: #4a4651; white-space: pre-wrap; margin: 0 0 12px; }
+
+  /* 爱心（上下跳动） */
+  .hearts { display: inline-flex; gap: 3px; font-size: 18px; }
+  .heart { color: #ff5c8a; text-shadow: 0 1px 2px rgba(255,92,138,.4); display: inline-block; }
+  .heart.on { animation: beat 1.1s ease-in-out infinite; }
+  .heart.off { color: #e6d5dd; animation: none; }
+  @keyframes beat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-9px) scale(1.12); } }
+  .heart.on:nth-child(2) { animation-delay: .12s; }
+  .heart.on:nth-child(3) { animation-delay: .24s; }
+  .heart.on:nth-child(4) { animation-delay: .36s; }
+  .heart.on:nth-child(5) { animation-delay: .48s; }
+
+  .comments { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: auto; }
+  .comments h4 { font-size: 13px; color: var(--muted); margin: 0 0 6px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+  .caret { font-size: 11px; transition: transform .2s; }
+  .comments-body.collapsed { display: none; }
+  .comments-scroll { max-height: 150px; overflow-y: auto; padding-right: 4px; }
+  .comments-scroll::-webkit-scrollbar { width: 6px; }
+  .comments-scroll::-webkit-scrollbar-thumb { background: rgba(91,155,213,.4); border-radius: 6px; }
+  .comment {
+    font-size: 13px; background: rgba(255,255,255,.55); border-radius: 8px; padding: 6px 9px; margin-bottom: 6px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; border: 1px solid rgba(255,255,255,.5);
+  }
+  .comment .body { flex: 1; }
+  .comment .t { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .comment .ops { display: flex; gap: 4px; flex-shrink: 0; }
+  .cbtn { border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; padding: 2px 7px; color: var(--muted); }
+  .cbtn:hover { color: var(--blue); border-color: var(--blue); }
+  .cbtn.del:hover { color: #d33; border-color: #d33; }
+  .cform { display: flex; gap: 6px; margin-top: 8px; }
+  .cform input { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 13px; }
+
+  .claim {
+    margin-top: 12px; width: 100%; border-radius: 10px; padding: 10px;
+    border: none; cursor: pointer; font-size: 14px; font-weight: 600;
+    background: #ffe08a; color: #7a5a00;
+  }
+  .claim.free:hover { background: #ffd566; }
+  .claim.mine { background: #fff3b0; color: #7a5a00; border: 2px solid #ffd566; }
+  .claim.taken { background: #ece7ea; color: var(--muted); cursor: not-allowed; }
+  .claimer-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .claimed-by { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--blue-d); text-align: center; }
+  .empty { text-align: center; color: var(--muted); padding: 40px; }
+  .owner-tag { font-size: 11px; color: var(--muted); }
+
+  /* 弹窗 */
+  .modal-bg { position: fixed; inset: 0; background: rgba(45,42,50,.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 22px; width: 100%; max-width: 420px; }
+  .modal h3 { margin: 0 0 14px; }
+  .pf-sub { font-size: 14px; color: var(--ink); margin: 0 0 16px; }
+  .pf-sec { border-top: 1px dashed var(--line); padding-top: 14px; margin-top: 14px; }
+  .pf-sec-title { font-family: 'ZCOOL KuaiLe','Microsoft YaHei',sans-serif; font-size: 16px; color: var(--blue-d); margin-bottom: 4px; }
+  .pf-sec .hint { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+
+  /* 认领后全屏动画（环形谢谢） */
+  #thanksOverlay {
+    position: fixed; inset: 0; z-index: 50; display: none;
+    align-items: center; justify-content: center; flex-direction: column;
+    background: rgba(255,236,150,.96); cursor: pointer; overflow: hidden;
+  }
+  #thanksOverlay.show { display: flex; }
+  .tk-word {
+    position: absolute; color: #2f6fad; font-weight: 800;
+    font-family: 'Comic Sans MS','SimHei','Microsoft YaHei','PingFang SC',sans-serif;
+    text-shadow: 1px 2px 0 #fff; white-space: nowrap; opacity: 0;
+    animation: tkcycle 1.5s ease-in-out infinite;
+  }
+  @keyframes tkcycle {
+    0%   { opacity: 0; transform: translate(-50%,-50%) translateY(12px) scale(.5); }
+    14%  { opacity: 1; transform: translate(-50%,-50%) translateY(0) scale(1); }
+    60%  { opacity: 1; transform: translate(-50%,-50%) translateY(-14px) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) translateY(-26px) scale(.8); }
+  }
+  #thanksCenter {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%,-50%);
+    font-size: clamp(40px, 7vw, 84px); font-weight: 900; color: #2f6fad;
+    font-family: 'SimHei','Microsoft YaHei','PingFang SC',sans-serif;
+    text-shadow: 3px 4px 0 #fff; z-index: 2;
+    animation: centerBeat 1s ease-in-out infinite;
+  }
+  @keyframes centerBeat {
+    0%,100% { transform: translate(-50%,-50%) scale(1); }
+    50% { transform: translate(-50%,-50%) scale(1.1); }
+  }
+  #thanksHint { position: absolute; bottom: 28px; color: #a06a00; font-size: 14px; font-family: 'Comic Sans MS','Yuanti SC',cursive; opacity: .85; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2d2a32; color: #fff; padding: 11px 18px; border-radius: 10px; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="bg" id="bg"></div>
+
+<!-- 登录/注册 -->
+<div class="auth" id="authPanel">
+  <div class="auth-card glass">
+    <h2>🎁 礼物清单</h2>
+    <p class="sub">每个人都有自己的一份清单</p>
+    <div class="tabs">
+      <button id="tab-login" class="on" onclick="authTab('login')">登录</button>
+      <button id="tab-reg" onclick="authTab('reg')">注册</button>
+    </div>
+    <div id="loginForm">
+      <div class="field"><label>用户名</label><input id="au" autocomplete="username"></div>
+      <div class="field"><label>密码</label><input id="ap" type="password" autocomplete="current-password"></div>
+      <button class="btn block" onclick="doLogin()">登录</button>
+      <div class="auth-links">
+        <a onclick="authTab('phone')">📱 手机验证码登录</a>
+        <a onclick="authTab('forgot')">忘记密码？</a>
+      </div>
+    </div>
+
+    <div id="phoneForm" style="display:none">
+      <div class="field"><label>手机号</label><input id="p-phone" maxlength="11" inputmode="numeric" placeholder="11 位手机号"></div>
+      <div class="field"><label>验证码</label>
+        <div class="code-row">
+          <input id="p-code" maxlength="6" inputmode="numeric" placeholder="6 位验证码">
+          <button class="btn ghost" id="p-send" onclick="sendCode('login','p-phone','p-send')">获取验证码</button>
+        </div>
+      </div>
+      <div class="code-hint" id="p-hint" style="display:none"></div>
+      <button class="btn block" onclick="doPhoneLogin()">登录</button>
+      <div class="auth-links"><a onclick="authTab('login')">← 用账号密码登录</a></div>
+    </div>
+
+    <div id="forgotForm" style="display:none">
+      <div class="field"><label>已绑定的手机号</label><input id="f-phone" maxlength="11" inputmode="numeric" placeholder="11 位手机号"></div>
+      <div class="field"><label>验证码</label>
+        <div class="code-row">
+          <input id="f-code" maxlength="6" inputmode="numeric" placeholder="6 位验证码">
+          <button class="btn ghost" id="f-send" onclick="sendCode('reset','f-phone','f-send')">获取验证码</button>
+        </div>
+      </div>
+      <div class="code-hint" id="f-hint" style="display:none"></div>
+      <div class="field"><label>新密码</label><input id="f-pass" type="password" autocomplete="new-password"></div>
+      <button class="btn block" onclick="doReset()">重置密码</button>
+      <div class="auth-links"><a onclick="authTab('login')">← 返回登录</a></div>
+    </div>
+
+    <div id="regForm" style="display:none">
+      <div class="field"><label>用户名</label><input id="ru" autocomplete="off"></div>
+      <div class="field"><label>密码</label><input id="rp" type="password" autocomplete="new-password"></div>
+      <div class="field"><label>邀请码</label><input id="ri"></div>
+      <div class="field"><label>手机号（选填，绑定后可用验证码登录）</label><input id="r-phone" maxlength="11" inputmode="numeric" placeholder="11 位手机号"></div>
+      <div class="field"><label>验证码</label>
+        <div class="code-row">
+          <input id="r-code" maxlength="6" inputmode="numeric" placeholder="6 位验证码">
+          <button class="btn ghost" id="r-send" onclick="sendCode('register','r-phone','r-send')">获取验证码</button>
+        </div>
+      </div>
+      <div class="code-hint" id="r-hint" style="display:none"></div>
+      <button class="btn block" onclick="doRegister()">注册</button>
+    </div>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="app" style="display:none">
+  <header>
+    <h1>🎁 礼物清单</h1>
+    <div class="banner" id="banner"></div>
+    <div class="nav">
+      <button class="btn ghost" onclick="viewMine()">我的清单</button>
+      <select id="userSel" onchange="if(this.value)viewOwner(this.value)"><option value="">👥 看看谁的清单…</option></select>
+      <button class="btn ghost" id="profileBtn" onclick="openProfile()">⚙️ 我的</button>
+      <button class="btn ghost" onclick="doLogout()">退出</button>
+    </div>
+  </header>
+  <div class="wrap">
+    <div class="toolbar">
+      <button class="btn" id="addBtn" onclick="openAdd()" style="display:none">＋ 添加礼物</button>
+    </div>
+    <div id="list" class="grid"></div>
+  </div>
+</div>
+
+<!-- 添加礼物 -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h3>添加礼物</h3>
+    <div class="field"><label>礼物名称 *</label><input type="text" id="g-name"></div>
+    <div class="field"><label>喜爱程度（1-5 ♥）</label><select id="g-love"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
+    <div class="field"><label>价格</label><input type="text" id="g-price" placeholder="如 199"></div>
+    <div class="field"><label>描述</label><textarea id="g-desc" rows="3"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeAdd()">取消</button>
+      <button class="btn" onclick="submitAdd()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 我的（设置） -->
+<div class="modal-bg" id="profileModal">
+  <div class="modal">
+    <h3>⚙️ 我的</h3>
+    <p class="pf-sub">👤 用户名：<b id="pf-user"></b></p>
+
+    <div class="pf-sec">
+      <div class="pf-sec-title">🎂 我的生日</div>
+      <p class="hint">生日当天，你的清单会揭晓认领礼物的朋友是谁～</p>
+      <div class="field" style="display:flex;gap:10px;margin-bottom:8px;">
+        <input type="number" id="pf-month" min="1" max="12" placeholder="月份 1-12">
+        <input type="number" id="pf-day" min="1" max="31" placeholder="日期 1-31">
+      </div>
+      <button class="btn ghost" onclick="saveBirthday()">保存生日</button>
+    </div>
+
+    <div class="pf-sec">
+      <div class="pf-sec-title">📱 手机号</div>
+      <p class="hint" id="pf-phone-status"></p>
+      <div class="field" style="margin-bottom:8px;"><input id="pf-phone" maxlength="11" inputmode="numeric" placeholder="11 位手机号"></div>
+      <div class="field" style="margin-bottom:8px;">
+        <div class="code-row">
+          <input id="pf-code" maxlength="6" inputmode="numeric" placeholder="6 位验证码">
+          <button class="btn ghost" id="pf-send" onclick="sendCode('bind','pf-phone','pf-send')">获取验证码</button>
+        </div>
+      </div>
+      <div class="code-hint" id="pf-hint" style="display:none"></div>
+      <button class="btn ghost" onclick="savePhone()">绑定手机号</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeProfile()">完成</button>
+    </div>
+  </div>
+</div>
+
+<div id="thanksOverlay" onclick="hideThanks()">
+  <div id="thanksCenter">谢谢</div>
+  <div id="thanksHint">点击任意处关闭 · 100 种语言说谢谢</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api';
+let me = null, viewingOwner = null, canEdit = false, reveal = false, me_phone = null, me_birthday = null;
+let countdownTimer = null;
+const collapsed = new Set();
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtTime(ts){ const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+
+function authTab(t){
+  document.getElementById('tab-login').classList.toggle('on', t==='login');
+  document.getElementById('tab-reg').classList.toggle('on', t==='reg');
+  document.getElementById('loginForm').style.display = t==='login' ? '' : 'none';
+  document.getElementById('regForm').style.display = t==='reg' ? '' : 'none';
+  document.getElementById('phoneForm').style.display = t==='phone' ? '' : 'none';
+  document.getElementById('forgotForm').style.display = t==='forgot' ? '' : 'none';
+}
+
+// 发送验证码：purpose = login | reset | bind；带 60 秒倒计时
+async function sendCode(purpose, phoneId, btnId){
+  const phone = document.getElementById(phoneId).value.trim();
+  const hint = document.getElementById(phoneId.replace('-phone','-hint').replace('b-phone','b-hint'));
+  if(!/^1[3-9]\d{9}$/.test(phone)){ toast('请输入正确的 11 位手机号'); return; }
+  const btn = document.getElementById(btnId);
+  btn.disabled = true;
+  const r = await api('/send-code', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone, purpose }) });
+  if(!r.ok){ toast(r.data.error || '发送失败'); btn.disabled=false; return; }
+  if(r.data.devCode && hint){ hint.style.display=''; hint.textContent = '测试模式验证码：' + r.data.devCode; }
+  toast('验证码已发送');
+  let n = 60;
+  btn.textContent = n + 's';
+  const timer = setInterval(()=>{ n--; btn.textContent = n + 's'; if(n<=0){ clearInterval(timer); btn.disabled=false; btn.textContent='获取验证码'; } }, 1000);
+}
+
+async function doPhoneLogin(){
+  const r = await api('/login-phone', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone: document.getElementById('p-phone').value.trim(), code: document.getElementById('p-code').value.trim() }) });
+  if(r.ok){ toast('欢迎回来 ' + r.data.user); await boot(); }
+  else toast(r.data.error || '登录失败');
+}
+
+async function doReset(){
+  const r = await api('/reset-password', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone: document.getElementById('f-phone').value.trim(), code: document.getElementById('f-code').value.trim(), newPassword: document.getElementById('f-pass').value }) });
+  if(r.ok){ toast('密码已重置，请用新密码登录'); authTab('login'); }
+  else toast(r.data.error || '重置失败');
+}
+
+function openProfile(){
+  document.getElementById('pf-user').textContent = me || '';
+  document.getElementById('pf-month').value = me_birthday ? me_birthday.month : '';
+  document.getElementById('pf-day').value = me_birthday ? me_birthday.day : '';
+  document.getElementById('pf-phone').value = '';
+  document.getElementById('pf-code').value = '';
+  document.getElementById('pf-hint').style.display = 'none';
+  document.getElementById('pf-phone-status').textContent = me_phone ? ('当前已绑定：' + me_phone + '（重新绑定会覆盖）') : '未绑定（绑定后可用验证码登录、找回密码）';
+  document.getElementById('profileModal').classList.add('show');
+}
+function closeProfile(){ document.getElementById('profileModal').classList.remove('show'); }
+async function saveBirthday(){
+  const month = Number(document.getElementById('pf-month').value), day = Number(document.getElementById('pf-day').value);
+  const r = await api('/birthday', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ month, day }) });
+  if(r.ok){ me_birthday = { month, day }; toast('生日已保存 🎂'); if(viewingOwner===me) loadList(); }
+  else toast(r.data.error || '保存失败');
+}
+async function savePhone(){
+  const phone = document.getElementById('pf-phone').value.trim();
+  const code = document.getElementById('pf-code').value.trim();
+  if(!phone){ toast('请填写手机号'); return; }
+  const r = await api('/bind-phone', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ phone, code }) });
+  if(r.ok){ me_phone = r.data.phone; document.getElementById('pf-phone-status').textContent = '当前已绑定：' + r.data.phone; toast('手机号已绑定：' + r.data.phone); }
+  else toast(r.data.error || '绑定失败');
+}
+
+async function api(path, opts){
+  const r = await fetch(API + path, opts);
+  const d = await r.json().catch(()=>({}));
+  return { ok: r.ok, status: r.status, data: d };
+}
+
+async function doLogin(){
+  const r = await api('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ username: document.getElementById('au').value.trim(), password: document.getElementById('ap').value }) });
+  if(r.ok){ toast('欢迎回来 ' + r.data.user); await boot(); }
+  else toast(r.data.error || '登录失败');
+}
+async function doRegister(){
+  const r = await api('/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    username: document.getElementById('ru').value.trim(),
+    password: document.getElementById('rp').value,
+    invite: document.getElementById('ri').value.trim(),
+    phone: document.getElementById('r-phone').value.trim(),
+    code: document.getElementById('r-code').value.trim()
+  }) });
+  if(r.ok){ toast('注册成功 🎉'); await boot(); }
+  else toast(r.data.error || '注册失败');
+}
+async function doLogout(){
+  await api('/logout', { method:'POST' });
+  me = null; document.getElementById('app').style.display='none';
+  document.getElementById('authPanel').style.display='flex';
+  if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; }
+}
+
+function hearts(n){ let s=''; for(let i=1;i<=5;i++){ s += `<span class="heart ${i<=n?'on':'off'}">${i<=n?'♥':'♡'}</span>`; } return `<span class="hearts">${s}</span>`; }
+function priceStr(p){ p=(p||'').replace(/^¥\s*/,'').trim(); return p?('¥'+p):''; }
+
+function commentHTML(c, gid){
+  const ops = `<div class="ops">
+    ${c.mine?`<button class="cbtn" onclick="editComment('${gid}','${c.id}')">✎ 改</button>`:''}
+    <button class="cbtn del" onclick="delComment('${gid}','${c.id}')">🗑</button>
+  </div>`;
+  return `<div class="comment" id="cm-${c.id}" data-gid="${gid}">
+    <div class="body"><span class="txt">${esc(c.text)}</span><div class="t">${fmtTime(c.time)}</div></div>
+    ${ops}
+  </div>`;
+}
+
+function toggleComments(gid){
+  const b=document.getElementById('cb-'+gid), c=document.getElementById('caret-'+gid);
+  const now=b.classList.toggle('collapsed');
+  if(now) collapsed.add(gid); else collapsed.delete(gid);
+  c.style.transform = now ? 'rotate(-90deg)' : '';
+}
+
+function claimArea(g, owner){
+  let btn;
+  if(g.mine) btn = `<button class="claim mine" onclick="toggleClaim('${g.id}')">✓ 你已认领 · 点击取消</button>`;
+  else if(g.claimed) btn = `<button class="claim taken" disabled>已被匿名认领 🤫</button>`;
+  else btn = `<button class="claim free" onclick="toggleClaim('${g.id}')">🎀 我要匿名认领这个礼物</button>`;
+  let extra='';
+  if(g.claimed){
+    if(reveal) extra = g.claimedByUser ? `<div class="claimed-by">🎁 是 <b>${esc(g.claimedByUser)}</b> 认领的！</div>` : `<div class="claimed-by">认领人：匿名</div>`;
+    else if(!g.mine) extra = `<div class="claimer-note">生日当天揭晓认领人 🎂</div>`;
+  } else {
+    extra = `<div class="claimer-note">认领保密，生日当天揭晓 🎂</div>`;
+  }
+  return btn + extra;
+}
+
+async function loadList(){
+  const r = await api('/gifts?owner=' + encodeURIComponent(viewingOwner));
+  if(!r.ok){ toast(r.data.error||'加载失败'); return; }
+  const { gifts, ownerInfo, canEdit: ce } = r.data;
+  canEdit = ce;
+  reveal = ce && ownerInfo.countdown && ownerInfo.countdown.isToday;
+  document.getElementById('addBtn').style.display = canEdit ? '' : 'none';
+  document.getElementById('userSel').value = viewingOwner;
+  renderBanner(ownerInfo);
+  const list=document.getElementById('list');
+  if(!gifts.length){ list.innerHTML='<div class="empty">清单还是空的～'+(canEdit?'点右上角「添加礼物」开始吧':'')+'</div>'; return; }
+  list.innerHTML=gifts.map(g=>`
+    <div class="card">
+      <h3>${esc(g.name)} ${canEdit?`<span class="owner-tag">（我的）</span>`:`<span class="owner-tag">${esc(viewingOwner)} 的</span>`}</h3>
+      <div class="meta">
+        <span title="喜爱程度 ${g.love}/5">${hearts(g.love)}</span>
+        ${g.price?`<span class="price">${esc(priceStr(g.price))}</span>`:''}
+      </div>
+      ${g.description?`<p class="desc">${esc(g.description)}</p>`:''}
+      <div class="comments">
+        <h4 onclick="toggleComments('${g.id}')">📝 大家说 (${g.comments.length}) <span class="caret" id="caret-${g.id}" style="${collapsed.has(g.id)?'transform:rotate(-90deg)':''}">▾</span></h4>
+        <div class="comments-body ${collapsed.has(g.id)?'collapsed':''}" id="cb-${g.id}">
+          <div class="comments-scroll">${g.comments.map(c=>commentHTML(c,g.id)).join('')}</div>
+          <div class="cform">
+            <input type="text" placeholder="写句评价…" id="c-${g.id}" onkeydown="if(event.key==='Enter')addComment('${g.id}')">
+            <button class="btn ghost" onclick="addComment('${g.id}')">发送</button>
+          </div>
+        </div>
+      </div>
+      ${claimArea(g, viewingOwner)}
+    </div>`).join('');
+}
+
+function renderBanner(info){
+  const b=document.getElementById('banner');
+  const cd=info.countdown;
+  if(!info.birthday){
+    b.innerHTML = canEdit ? `🎂 还没设置生日（生日当天会揭晓认领人）` : `${esc(info.username)} 还没设置生日`;
+    b.classList.remove('celebrate');
+    if(countdownTimer){ clearInterval(countdownTimer); countdownTimer=null; }
+    return;
+  }
+  if(countdownTimer) clearInterval(countdownTimer);
+  const target=cd.target, username=info.username;
+  function update(){
+    const now=Date.now(), diff=target-now;
+    if(diff<=0){
+      b.innerHTML=`🎂 今天是 ${esc(username)} 的生日！认领人已揭晓 🎉`;
+      b.classList.add('celebrate');
+      clearInterval(countdownTimer); countdownTimer=null;
+      loadList(); return;
+    }
+    const days=Math.floor(diff/86400000); let r=diff%86400000;
+    const hours=Math.floor(r/3600000); r%=3600000;
+    const minutes=Math.floor(r/60000); r%=60000;
+    const seconds=Math.floor(r/1000);
+    b.innerHTML=`🎂 ${esc(username)} 的生日倒计时：<b>${days}</b> 天 <b>${String(hours).padStart(2,'0')}</b> 时 <b>${String(minutes).padStart(2,'0')}</b> 分 <b>${String(seconds).padStart(2,'0')}</b> 秒`;
+    b.classList.remove('celebrate');
+  }
+  update();
+  countdownTimer=setInterval(update,1000);
+}
+
+async function viewMine(){ viewingOwner = me; await loadList(); }
+async function viewOwner(name){ viewingOwner = name; await loadList(); }
+
+async function loadUsers(){
+  const r = await api('/users');
+  if(!r.ok) return;
+  const sel = document.getElementById('userSel');
+  const cur = viewingOwner || me;
+  sel.innerHTML = '<option value="">👥 看看谁的清单…</option>' + r.data.users.map(u=>`<option value="${esc(u)}" ${u===cur?'selected':''}>${esc(u)}</option>`).join('');
+}
+
+async function toggleClaim(id){
+  const r = await api('/gifts/'+id+'/claim', { method:'POST' });
+  if(r.status===409) toast('这个礼物已经被别人认领啦');
+  else if(r.ok){ if(r.data.claimed && r.data.mine) showThanks(); else toast('已取消认领'); }
+  else toast('操作失败');
+  loadList();
+}
+
+async function addComment(id){
+  const inp=document.getElementById('c-'+id); const text=inp.value.trim();
+  if(!text) return;
+  const r=await api('/gifts/'+id+'/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+  if(r.ok){ inp.value=''; loadList(); } else toast('评价失败');
+}
+
+async function editComment(gid, cid){
+  const el=document.getElementById('cm-'+cid); const span=el.querySelector('.txt'); const old=span.textContent;
+  const input=document.createElement('input');
+  input.type='text'; input.value=old; input.style.cssText='width:100%;padding:4px 6px;border:1px solid #f0e6ec;border-radius:6px;font-size:13px;';
+  span.replaceWith(input); input.focus();
+  const save=async ()=>{
+    const text=input.value.trim();
+    if(!text){ input.replaceWith(span); return; }
+    const r=await api('/gifts/'+gid+'/comments/'+cid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    if(r.ok) loadList(); else toast('修改失败');
+  };
+  input.onblur=save;
+  input.onkeydown=e=>{ if(e.key==='Enter') input.blur(); if(e.key==='Escape') input.replaceWith(span); };
+}
+
+async function delComment(gid, cid){
+  if(!confirm('确定删除这条评价吗？')) return;
+  const r=await api('/gifts/'+gid+'/comments/'+cid,{method:'DELETE'});
+  if(r.ok) loadList(); else toast('无权删除');
+}
+
+function openAdd(){ document.getElementById('addModal').classList.add('show'); }
+function closeAdd(){ document.getElementById('addModal').classList.remove('show'); }
+async function submitAdd(){
+  const body={
+    name:document.getElementById('g-name').value.trim(),
+    love:Number(document.getElementById('g-love').value),
+    price:document.getElementById('g-price').value.trim(),
+    description:document.getElementById('g-desc').value.trim()
+  };
+  if(!body.name){ toast('请填写礼物名称'); return; }
+  const r=await api('/gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.ok){ closeAdd(); toast('礼物已添加 🎉'); loadList(); }
+  else toast(r.data.error||'添加失败');
+}
+
+
+
+/* 认领动画：环形谢谢 */
+const THANKS = ["谢谢","Thank you","Gracias","Merci","Danke","Grazie","Obrigado","Спасибо","ありがとう","감사합니다","شكرا","धन्यवाद","ধন্যবাদ","Dank je","Teşekkür ederim","Ευχαριστώ","תודה","ขอบคุณ","Cảm ơn","Terima kasih","Dziękuję","Дякую","Mulțumesc","Köszönöm","Děkuji","Tack","Takk","Tak","Kiitos","Þakka þér","Go raibh maith agat","Tapadh leat","Diolch","Dankon","Asante","Salamat","متشکرم","شکریہ","ਧੰਨਵਾਦ","நன்றி","ధన్యవాదాలు","ಧನ್ಯವಾದಗಳು","നന്ദി","આભાર","धन्यवाद","धन्यवाद","ස්තුතියි","ကျေးဇူးတင်သည်","សូមអរគុណ","ຂອບໃຈ","Баярлалаа","Рақмет","Təşəkkür edirəm","გმადლობ","Շնորհակալություն","Faleminderit","Hvala","Хвала","Hvala","Hvala","Ďakujem","Благодаря","Tänan","Paldies","Ačiū","Grazzi","Gràcies","Eskerrik asko","Grazas","Dankie","Ngiyabonga","Enkosi","Mèsi","Kia ora","Mahalo","Fa'afetai","Malo 'aupito","Vinaka","Ahéhee'","Añay","Nakurmiik","אַ דאַנק","Merci","Merci vilmal","Grazzi","Trugarez","Grazzien","Gràtzias","Takk fyri","مننه","Spas","Mahadsanid","አመሰግናለሁ","O ṣeun","Daalụ","Na gode","Galatoomaa","የቐንየለይ","Ngiyabonga","شكراً جزيلاً","Dank u","Благодарности","મોટું આભાર","நன்றி மிகு","ధన్యవాదాలు","നന്ദി മിക്ക"];
+
+let tkStop=null;
+function showThanks(){
+  const ov=document.getElementById('thanksOverlay');
+  ov.querySelectorAll('.tk-word').forEach(e=>e.remove());
+  const pool=[...THANKS].filter(w=>w!=='谢谢').sort(()=>Math.random()-0.5);
+  const count=Math.min(16, pool.length);
+  for(let i=0;i<count;i++){
+    const el=document.createElement('div');
+    el.className='tk-word';
+    el.textContent=pool[i];
+    ov.appendChild(el);
+    placeWord(el);
+    const dur=1.1+Math.random()*0.7;
+    el.style.animationDuration=dur.toFixed(2)+'s';
+    el.style.animationDelay=(-Math.random()*1.5).toFixed(2)+'s';
+    el._timer=setInterval(()=>{
+      placeWord(el);
+    }, dur*1000);
+  }
+  ov.classList.add('show');
+  if(tkStop) clearTimeout(tkStop);
+  tkStop=setTimeout(()=>hideThanks(),3000);
+}
+function placeWord(el){
+  el.style.left=(3+Math.random()*94)+'%';
+  el.style.top=(3+Math.random()*94)+'%';
+  el.style.fontSize=(16+Math.random()*30).toFixed(0)+'px';
+}
+function hideThanks(){
+  const ov=document.getElementById('thanksOverlay');
+  ov.classList.remove('show');
+  if(tkStop) clearTimeout(tkStop);
+  ov.querySelectorAll('.tk-word').forEach(e=>{ if(e._timer) clearInterval(e._timer); e.remove(); });
+}
+
+/* 背景装饰 */
+function setupBg(){
+  const bg=document.getElementById('bg');
+  const v=document.createElement('video');
+  v.muted=true; v.loop=true; v.autoplay=true; v.playsInline=true;
+  v.src='bg.mp4';
+  v.addEventListener('canplay', ()=>{ bg.innerHTML=''; bg.appendChild(v); v.play().catch(()=>{}); spawnDecor(); }, { once:true });
+  v.addEventListener('error', ()=>{ tryImg(bg); }, { once:true });
+}
+function tryImg(bg){
+  const img=new Image();
+  img.onload=()=>{ bg.innerHTML=''; const i=document.createElement('img'); i.src='bg.jpg'; bg.appendChild(i); spawnDecor(); };
+  img.onerror=()=>{ bg.classList.add('noimg'); spawnDecor(); };
+  img.src='bg.jpg';
+}
+function spawnDecor(){}
+
+async function boot(){
+  const r = await api('/me');
+  me = r.data.user;
+  if(!me){
+    document.getElementById('app').style.display='none';
+    document.getElementById('authPanel').style.display='flex';
+    return;
+  }
+  me_phone = r.data.phone || null;
+  me_birthday = r.data.birthday || null;
+  document.getElementById('authPanel').style.display='none';
+  document.getElementById('app').style.display='';
+  viewingOwner = me;
+  await loadUsers();
+  await loadList();
+}
+
+setupBg();
+boot();
+</script>
+</body>
+</html>

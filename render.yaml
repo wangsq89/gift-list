@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gift-list
+    runtime: node
+    plan: free
+    startCommand: node server.js
+    envVars:
+      - key: GIFT_INVITE_CODE
+        sync: false
+      # 若开通了付费持久盘，可取消下面两行注释，数据即可在重启后保留
+      # - key: GIFT_DATA_FILE
+      #   value: /data/data.json
